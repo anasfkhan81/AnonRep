@@ -1,0 +1,753 @@
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ex:    <http://www.example.org/#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix schema: <http://schema.org/> .
+@prefix cc:    <http://creativecommons.org/ns#> .
+@prefix vartrans: <http://www.w3.org/ns/lemon/vartrans#> .
+@prefix wn:    <https://globalwordnet.github.io/schemas/wn#> .
+@prefix lime:  <http://www.w3.org/ns/lemon/lime#> .
+@prefix ili:   <http://ili.globalwordnet.org/ili/> .
+@prefix synsem: <http://www.w3.org/ns/lemon/synsem#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix ontolex: <http://www.w3.org/ns/lemon/ontolex#> .
+@prefix cc: <http://creativecommons.org/ns#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+
+
+# Node shape for LexicalResource element 
+
+
+# Node shape for Lexicon element
+ex:LexiconShape a sh:NodeShape ;
+    sh:targetClass lime:Lexicon ;
+    sh:property [
+		sh:name "Entry" ;
+		sh:description "Make sure there is at least one LexicalEntry" ;  
+        sh:path lime:entry ;
+        sh:minCount 1 ;
+        sh:node ex:LexicalEntryShape ;
+    ] ;										# Link from Lexicon to Synset and SyntacticBehaviour
+
+    sh:property [ 							# Should we add some kind of constraint on what this label should look like
+		sh:name "Label" ;
+		sh:description "Label of the lexicon" ;
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+       sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+	sh:or ( 								# Added an 'or' here, with two possible properties, either from dc or lime
+    [
+        sh:name "Language" ;
+        sh:description "Make sure there is one single language assigned to the Wordnet, via DC:language" ;  
+        sh:path dc:language ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRIOrLiteral ;
+    ]
+    [
+        sh:name "Language" ;
+        sh:description "Make sure there is one single language assigned to the Wordnet, via lime:language" ;  
+        sh:path lime:language ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRIOrLiteral ;
+    ]
+	) ; 
+	sh:property [							# In the case of a literal we can specify further constraints
+											# @John: do you want to add other constraints for email? e.g., should have an @?
+        sh:name "Email" ;
+		sh:description "Email address of contact person" ;
+		sh:path schema:email;
+        sh:minCount 1 ;
+        sh:nodeKind sh:IRIOrLiteral ;
+    ] ;
+	sh:property [							# Perhaps we can specify more than one license?
+											# Should we add other properties here?
+        sh:name "License" ;
+		sh:path cc:license ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:IRIOrLiteral  ;
+    ] ; 
+	sh:property [						
+		sh:name "Version" ; 
+		sh:path owl:versionInfo ; 
+		sh:minCount 1 ; 
+		sh:maxCount 1 ;
+	]; 
+    sh:property [
+		sh:name "Status" ; 
+		sh:description "Status attached to Lexicon" ; 
+        sh:path wn:status ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ])  ;
+    ] ;
+    sh:property [
+		sh:name "Note" ;
+		sh:description "Note attached to Lexicon" ;
+        sh:path wn:note ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+		sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+	# Add constraints on the URL
+	sh:property [
+		sh:name "Confidence Score" ;
+        sh:path wn:confidenceScore ;
+		#sh:value "1.0"^^<http://www.w3.org/2001/XMLSchema#double> ;
+    ].
+
+
+# Node shape for Lexical Entry element
+ex:LexicalEntryShape a sh:NodeShape ;
+    sh:targetClass ontolex:LexicalEntry ;
+    sh:property [
+		sh:name "Lemma" ;
+		sh:description "Make sure there is exactly one canonical form, of correct shape" ; 	
+        sh:path ontolex:canonicalForm ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+		sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node ex:FormShape ;
+    ] ;
+	sh:property [
+		sh:name "Part of Speech" ;			
+        sh:path wn:partOfSpeech  ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+		sh:in (wn:noun wn:verb wn:adjective wn:adverb wn:adjective_satellite wn:named_entity
+    wn:conjunction wn:adposition wn:other_pos wn:unknown_pos ) ;
+    ] ;
+    sh:property [
+		sh:name "Form" ; 
+		sh:description "Make sure that other forms, apart from lemma are of correct shape" ;
+        sh:path ontolex:otherForm ;
+		sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node ex:FormShape ;
+    ] ;
+    sh:property [
+		sh:name "Senses" ; 
+		sh:description "Make sure that senses are of correct shape" ;
+        sh:path ontolex:sense ;
+		sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:node ex:SenseShape ;
+    ] ;
+	    sh:property [
+		sh:name "Syntactic Behaviour" ; 
+        sh:path synsem:synBehavior;
+		sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:class synsem:SyntacticFrame;
+    ] ;
+    sh:property [
+        sh:path dc:date ;
+        sh:datatype xsd:date ;
+    ] ;
+    sh:property [
+		sh:name "Status" ; 
+		sh:description "Status attached to Lexical Entry" ; 
+        sh:path wn:status ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+		sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Note" ;
+		sh:description "Note attached to Lexical Entry" ;
+        sh:path wn:note ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ; 
+		sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    )  ;
+    ] ;
+    sh:property [
+		sh:name "Confidence Score" ; 
+		sh:description "Confidence Score attached to Lexical Entry" ;
+        sh:path wn:confidenceScore ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:float ;
+    ] .
+
+# Shape for Forms
+ex:FormShape a sh:NodeShape ; 
+	sh:targetClass ontolex:Form ; 
+	sh:property [
+		sh:name "Written Form" ; 
+		sh:description "Written form of a form" ;
+		sh:path ontolex:writtenRep	; 
+		sh:minCount 1; 
+		sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+	] 
+												#  Specify that all scripts must be a 4 letter ISO 15924 code ?
+	; 
+	sh:property [
+		sh:name "Script" ; 
+		sh:description "The script of a written form of a form" ;
+        sh:path wn:script ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+		sh:nodeKind xsd:string ; 
+    ] ; 
+	sh:property [
+		sh:name "Pronunciation" ; 
+		sh:description "Pronunciation of a form" ;
+		sh:path wn:pronunciation	;  
+		sh:node ex:PronunciationShape ;
+	] ; 
+	sh:property [
+		sh:name "Tag" ; 
+		sh:description "Tag of a form" ;
+		sh:path wn:tag	;  
+		sh:node ex:TagShape ;									
+	].
+
+# Shape for Pronunciation
+ex:PronunciationShape a sh:NodeShape ; 
+	sh:targetClass wn:Pronunciation ; 
+	sh:property [
+		sh:name "Variety" ; 
+		sh:description "Indicates the variety of language the pronunciation represents"@en ; 
+		sh:path wn:variety ;
+	] ; 
+	sh:property [
+		sh:name "Notation" ; 
+		sh:description "The notation scheme used for a pronunciation"@en ; 
+		sh:path wn:notation ;
+	] ; 	
+	sh:property [
+		sh:name "Phonemic" ; 
+		sh:description "Indicates if the pronunciation is phonemic, in that it does not represent every aspect of the pronunciation and omits information that could be assumed for this language"@en ; 
+		sh:path wn:phonemic ; 
+		sh:datatype xsd:boolean ; 
+	] ; 
+	sh:property [
+		sh:name "Audio" ; 
+		sh:description "Links to an audio file for a pronunciation"@en ;
+		sh:path wn:audio ; 
+		sh:nodeKind sh:IRI ; 
+	].	# TO DO
+
+# Shape for Tag
+ex:TagShape a sh:NodeShape  ; 
+	sh:targetClass wn:Tag  ; 
+	sh:property [
+		sh:name "category" ;
+		sh:description "Tag must have exactly one category attribute."@en   ; 
+		sh:maxCount 1 ;
+        sh:minCount 1 ;
+        sh:path wn:category;
+		sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] .
+
+#Shape for Definition	
+ex:DefinitionShape a sh:NodeShape ;
+	sh:targetClass wn:Definition ; 
+    sh:or ( 						
+    [
+        sh:name "Language" ;
+        sh:description "Make sure there is one single language assigned to the Definition, via DC:language" ;  
+        sh:path dc:language ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRIOrLiteral ;
+    ]
+    [
+        sh:name "Language" ;
+        sh:description "Make sure there is one single language assigned to the Definition, via lime:language" ;  
+        sh:path lime:language ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRIOrLiteral ;
+    ]
+	); 
+	sh:property [ 
+		sh:name "sourceSense" ;
+        sh:description "Definition must have at most one sourceSense attribute." ;
+        sh:path wn:sourceSense ;
+		sh:minCount 0 ;
+		sh:maxCount 1 ;
+        sh:class ontolex:LexicalSense;
+        ]
+	;     sh:property [
+		sh:name "Status" ; 
+		sh:description "Status attached to Definition" ; 
+        sh:path wn:status ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+		sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    )	;
+    ] ;
+    sh:property [
+		sh:name "Note" ;
+		sh:description "Note attached to Definition" ;
+        sh:path wn:note ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Confidence Score" ; 
+		sh:description "Confidence Score attached to Definition" ;
+        sh:path wn:confidenceScore ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:float ;
+    ] .
+
+# Shape for ILI Definition
+ex:ILIDefinitionShape a sh:NodeShape ;
+	sh:targetClass wn:ILIDefinition ;  
+	sh:property [
+		sh:name "Status" ; 
+		sh:description "Status attached to Definition" ; 
+        sh:path wn:status ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Note" ;
+		sh:description "Note attached to Definition" ;
+        sh:path wn:note ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Confidence Score" ; 
+		sh:description "Confidence Score attached to Definition" ;
+        sh:path wn:confidenceScore ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:float ;
+    ] .
+
+# Shape for Example
+ex:Example a sh:NodeShape ;
+	sh:targetClass wn:Example; 
+	sh:or ( 						
+    	[
+        sh:name "Language" ;
+        sh:description "Make sure there is one single language assigned to the Example, via DC:language" ;  
+        sh:path dc:language ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRIOrLiteral ;
+   	 ]
+   	[
+        sh:name "Language" ;
+        sh:description "Make sure there is one single language assigned to the Example, via lime:language" ;  
+        sh:path lime:language ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRIOrLiteral ;
+    	]
+	);
+    sh:property [
+		sh:name "Status" ; 
+		sh:description "Status attached to an Example"; 
+        sh:path wn:status ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+       sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Note" ;
+		sh:description "Note attached to Example" ;
+        sh:path wn:note ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Confidence Score" ; 
+		sh:description "Confidence Score attached to Example";
+        sh:path wn:confidenceScore ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:float ;
+    ] .
+	
+# Shape for Sense
+ex:SenseShape a sh:NodeShape ;
+    sh:targetClass ontolex:LexicalSense ; 
+	sh:property [
+		sh:name "Example" ;
+		sh:description "Make examples of a Sense belong to the wn class Example" ; 
+        sh:path wn:example  ;
+        sh:class wn:Example ;
+    ] ;
+	sh:property [
+		sh:name "Count" ;
+		sh:description "Make sure Count is a Count" ;  
+        sh:node ex:CountShape ;
+    ]  ;
+    sh:property [
+		sh:name "Synset" ;
+		sh:description "Make sure each sense is associated with a synset" ; 	
+        sh:path ontolex:isLexicalizedSenseOf;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:node ex:SynsetShape ;
+    ]  ; 
+    sh:property [
+		sh:name "Status" ; 
+		sh:description "Status attached to Sense" ; 
+        sh:path wn:status ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Note" ;
+		sh:description "At most one attached to Sense" ;
+        sh:path wn:note ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Confidence Score" ; 
+		sh:description "At most Confidence Score attached to Sense" ;
+        sh:path wn:confidenceScore ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:float ;
+    ] ; 
+	sh:property [
+		sh:name "Subcat" ; 
+		sh:description "At most one piece of Subcategorization Frame information" ;
+        sh:path wn:senseSubcat ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+    ]
+	.
+
+# Shape for Synset
+ex:SynsetShape a sh:NodeShape ;
+    sh:targetClass ontolex:LexicalConcept ;
+	sh:targetSubjectOf ontolex:isLexicalizedSenseOf ;
+	sh:property [
+		sh:name "Definition" ; 
+		sh:description "The Definition of a Synset" ; 
+        sh:path wn:definition  ;
+        sh:node ex:DefinitionShape ;
+	] ;
+	sh:property [
+		sh:name "ILI Definition" ; 
+		sh:description "The English standard definition of the synset in the ILI" ; 
+        sh:path wn:iliDefinition  ;
+		sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:node ex:ILIDefinitionShape ;
+	] ;
+	sh:property [
+		sh:name "Example" ;
+		sh:description "Make sure examples of a Synset belong to the wn class Example" ; 
+        sh:path wn:example  ;
+        sh:class wn:Example ;
+    ] ;
+    sh:property [								# TO CHECK!
+	
+        sh:path skos:inScheme  ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:BlankNodeOrIRI ;
+    ] ; 
+	sh:property [
+		sh:name "ILI" ;
+		sh:description "Check if synset is assigned an ILI (obligatory)" ; 
+        sh:path wn:ili  ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+    ] ; 
+	sh:property [
+		sh:name "Part of Speech" ;				# Could make this an 'or' with lexinfo PoS's
+		sh:description "PoS of a synset" ; 
+        sh:path wn:partOfSpeech  ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+		sh:in (wn:noun wn:verb wn:adjective wn:adverb wn:adjective_satellite wn:named_entity
+    wn:conjunction wn:adposition wn:other_pos wn:unknown_pos ) ;
+    ] ;
+	sh:property [
+		sh:name "Status" ; 
+		sh:description "Status attached to Synset" ; 
+        sh:path wn:status ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Note" ;
+		sh:description "Note attached to Synset" ;
+        sh:path wn:note ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Confidence Score" ; 
+		sh:description "Confidence Score attached to Synset" ;
+        sh:path wn:confidenceScore ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:float ;
+    ] ; 
+	sh:property [
+		sh:name "Members List" ; 
+		sh:description "Members List attached to Synset" ;
+		sh:path wn:memberList ;
+		sh:minCount 0 ;
+		sh:maxCount 1 ;
+		sh:or (
+			[ sh:nodeKind sh:IRI ; sh:class rdf:List ]    # For RDF List
+			[ sh:nodeKind sh:IRI ; sh:class rdf:Bag ]     # For rdf:Bag container
+			[ sh:nodeKind sh:IRI ; sh:class rdf:Seq ]     # For rdf:Seq container
+			[ sh:nodeKind sh:IRI ; sh:class rdf:Alt ]     # For rdf:Alt container
+		) ;
+	] .
+
+												# Need to add lexfile(?)
+ 		
+ex:SenseRelationShape a sh:NodeShape ;
+    sh:targetClass vartrans:SenseRelation ;
+    sh:property [
+        sh:path vartrans:category ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in (wn:antonym wn:also wn:participle wn:pertainym wn:derivation wn:domain_topic wn:has_domain_topic wn:domain_region wn:has_domain_region wn:exemplifies wn:is_exemplified_by wn:similar wn:other wn:simple_aspect_ip wn:secondary_aspect_ip wn:simple_aspect_pi wn:secondary_aspect_pi wn:feminine wn:has_feminine wn:masculine wn:has_masculine wn:young wn:has_young wn:diminutive wn:has_diminutive wn:augmentative wn:has_augmentative wn:anto_gradable wn:anto_simple wn:anto_converse)];
+	sh:property [
+        sh:path vartrans:source  ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+    ] ; 
+	sh:property [
+        sh:path vartrans:target  ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+    ];
+	sh:property [
+		sh:name "Status" ; 
+		sh:description "Status attached to Sense Relation" ; 
+        sh:path wn:status ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Note" ;
+		sh:description "Note attached to Sense Relation" ;
+        sh:path wn:note ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+       sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]
+    ) ;
+    ] ;
+    sh:property [
+		sh:name "Confidence Score" ; 
+		sh:description "Confidence Score attached to Sense Relation" ;
+        sh:path wn:confidenceScore ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:float ;
+    ] .	
+	
+ex:ConceptualRelationShape a sh:NodeShape ;
+    sh:targetClass vartrans:ConceptualRelation ;
+    sh:property [
+        sh:path vartrans:category ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in (wn:agent wn:also wn:attribute wn:be_in_state wn:causes wn:classified_by wn:classifies wn:co_agent_instrument wn:co_agent_patient wn:co_agent_result wn:co_instrument_agent wn:co_instrument_patient wn:co_instrument_result wn:co_patient_agent wn:co_patient_instrument wn:co_result_agent wn:co_result_instrument wn:co_role wn:direction wn:domain_region wn:domain_topic wn:exemplifies wn:entails wn:eq_synonym wn:has_domain_region wn:has_domain_topic wn:is_exemplified_by wn:holo_location wn:holo_member wn:holo_part wn:holo_portion wn:holo_substance wn:holonym wn:hypernym wn:hyponym wn:in_manner wn:instance_hypernym wn:instance_hyponym wn:instrument wn:involved wn:involved_agent wn:involved_direction wn:involved_instrument wn:involved_location wn:involved_patient wn:involved_result wn:involved_source_direction wn:involved_target_direction wn:is_caused_by wn:is_entailed_by wn:location wn:manner_of wn:mero_location wn:mero_member wn:mero_part wn:mero_portion wn:mero_substance wn:meronym wn:similar wn:other wn:patient wn:restricted_by wn:restricts wn:result wn:role wn:source_direction wn:state_of wn:target_direction wn:subevent wn:is_subevent_of wn:antonym wn:feminine wn:has_feminine wn:masculine wn:has_masculine wn:young wn:has_young wn:diminutive wn:has_diminutive wn:augmentative wn:has_augmentative wn:anto_gradable wn:anto_simple wn:anto_converse wn:ir_synonym wn:similar)];
+	sh:property [
+        sh:path vartrans:source  ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+    ] ; 
+	sh:property [
+        sh:path vartrans:target  ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+    ] .
+
+
+ex:CountShape a sh:NodeShape ;
+    sh:property 
+        [ a sh:PropertyShape ;
+            sh:datatype xsd:string ;
+            sh:description "Count must have at most one status attribute." ;
+            sh:maxCount 1 ;
+            sh:minCount 0 ;
+            sh:name "status" ;
+            sh:path wn:status ],
+        [ a sh:PropertyShape ;
+            sh:datatype xsd:string ;
+            sh:description "Count must have at most one note attribute." ;
+            sh:maxCount 1 ;
+            sh:minCount 0 ;
+            sh:name "note" ;
+            sh:path wn:note ],
+        [ a sh:PropertyShape ;
+            sh:datatype xsd:string ;
+            sh:description "Count must have at most one confidenceScore attribute." ;
+            sh:maxCount 1 ;
+            sh:minCount 0 ;
+            sh:name "confidenceScore" ;
+            sh:path wn:confidenceScore ] ;
+    sh:targetClass wn:Count .
+
+
+
+ex:MetadataElement a sh:NodeShape ; 
+	sh:targetClass ontolex:Lexicon, ontolex:LexicalEntry, ontolex:LexicalSense, wn:Definition, wn:ILIDefinition, wn:Example, wn:Count;
+    sh:property
+        [ a sh:PropertyShape ;
+            sh:datatype xsd:string ;
+            sh:description "Element must have at most one publisher attribute." ;
+            sh:maxCount 1 ;
+            sh:minCount 0 ;
+            sh:name "publisher" ;
+            sh:path dc:publisher ; ],
+        [ a sh:PropertyShape ;
+            sh:datatype xsd:string ;
+            sh:description "Element must have at most one contributor attribute." ;
+            sh:name "contributor" ;
+            sh:path dc:contributor ],
+        [ a sh:PropertyShape ;
+                   sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]);
+          sh:description "Element must have at most one note attribute." ;
+            sh:maxCount 1 ;
+            sh:minCount 0 ;
+            sh:name "note" ;
+            sh:path dc:note ],
+        [ a sh:PropertyShape ;
+         sh:or (
+        [ sh:datatype xsd:string ]
+        [ sh:nodeKind sh:Literal ]) ;
+            sh:description "Element must have at most one description attribute." ;
+            sh:maxCount 1 ;
+            sh:minCount 0 ;
+            sh:name "description" ;
+            sh:path dc:description ],
+        [ a sh:PropertyShape ;
+            sh:description "Creator attribute." ;
+            sh:minCount 0 ;
+            sh:name "creator" ;
+            sh:path dc:creator ],
+        [ a sh:PropertyShape ;
+            sh:datatype xsd:string ;
+            sh:description "Type attribute." ;
+            sh:name "type" ;
+            sh:path dc:type ],
+        [ a sh:PropertyShape ;
+            sh:description "Element must have at most one format attribute." ;
+            sh:maxCount 1 ;
+            sh:minCount 0 ;
+            sh:name "format" ;
+            sh:path dc:format ],
+        [ a sh:PropertyShape ;
+            sh:description "relation attribute." ;
+            sh:name "relation" ;
+            sh:path dc:relation ],
+        [ a sh:PropertyShape ;
+            sh:description "Element must have at most one subject attribute." ;
+            sh:name "subject" ;
+            sh:path dc:subject ],
+        [ a sh:PropertyShape ;
+            sh:description "Element must have at most one coverage attribute." ;
+            sh:name "coverage" ;
+            sh:path dc:coverage ],
+        [ a sh:PropertyShape ;
+            sh:datatype xsd:string ;
+            sh:description "Element must have at most one title attribute." ;
+            sh:maxCount 1 ;
+            sh:minCount 0 ;
+            sh:name "title" ;
+            sh:path dc:title ],
+        [ a sh:PropertyShape ;
+            sh:description "Source attribute." ;
+            sh:maxCount 1 ;
+            sh:minCount 0 ;
+            sh:name "source" ;
+            sh:path dc:source ],
+        [ a sh:PropertyShape ;
+            sh:datatype xsd:string ;
+            sh:description "Element must have at most one identifier attribute." ;
+            sh:maxCount 1 ;
+            sh:minCount 0 ;
+            sh:name "identifier" ;
+            sh:path dc:identifier ],
+        [ a sh:PropertyShape ;
+            sh:description "date attribute." ;
+            sh:name "date" ;
+            sh:path dc:date ],
+        [ a sh:PropertyShape ;
+            sh:datatype xsd:string ;
+            sh:description "Element must have at most one rights attribute." ;
+            sh:name "rights" ;
+            sh:path dc:rights ] .
