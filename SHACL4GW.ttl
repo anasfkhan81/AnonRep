@@ -56,7 +56,7 @@ ex:LexiconShape a sh:NodeShape ;
         sh:path lime:language ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
-        sh:nodeKind sh:IRIOrLiteral ;
+        sh:nodeKind sh:Literal ;
     ]
 	) ; 
 	sh:property [							
@@ -271,7 +271,7 @@ ex:DefinitionShape a sh:NodeShape ;
         sh:path lime:language ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
-        sh:nodeKind sh:IRIOrLiteral ;
+        sh:nodeKind sh:Literal ;
     ]
 	); 
 	sh:property [ 
@@ -494,7 +494,7 @@ ex:SynsetShape a sh:NodeShape ;
     ] ; 
 	sh:property [
 		sh:name "ILI" ;
-		sh:description "Make sure that the synset  assigned an ILI (obligatory)" ; 
+		sh:description "Make sure that the synset is assigned an ILI (obligatory)" ; 
         sh:path wn:ili  ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
